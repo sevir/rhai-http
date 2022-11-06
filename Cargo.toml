@@ -1,0 +1,10 @@
+[package]
+name = "rhai_http"
+version = "0.1.0"
+edition = "2021"
+authors = ["José F. Rives"]
+description = ""
+keywords = ["scripting", "scripting-language", "embedded", "rhai"]
+
+[dependencies]
+rhai = { version = "1.9.1" }
