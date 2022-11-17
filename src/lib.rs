@@ -23,11 +23,19 @@ impl Http {
     }
 
     fn get(&mut self, url: ImmutableString) -> HttpResponse {
-        let response: reqwest::blocking::Response = reqwest::blocking::get(url.as_str()).unwrap();
-        let code:i64 = response.status().as_u16().into();
-        let body: ImmutableString = response.text().unwrap().into();
+        let response = reqwest::blocking::get(url.as_str());
 
-        HttpResponse { code: code, body: body.clone(), cookie: "".into(), headers: "".into() }
+        match response{
+            Ok(response) => {
+                let code:i64 = response.status().as_u16().into();
+                let body: ImmutableString = response.text().unwrap().into();
+        
+                HttpResponse { code: code, body: body.clone(), cookie: "".into(), headers: "".into() }
+            },
+            Err(_e) => {
+                HttpResponse { code: 500, body: format!("{} can't be loaded", url.as_str()).into(), cookie: "".into(), headers: "".into() }
+            }
+        }        
     }
 }
 
