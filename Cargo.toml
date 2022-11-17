@@ -7,4 +7,5 @@ description = ""
 keywords = ["scripting", "scripting-language", "embedded", "rhai"]
 
 [dependencies]
+reqwest = { version = "0.11.13", features = ["blocking", "cookies", "deflate", "gzip", "json"] }
 rhai = { version = "1.9.1" }

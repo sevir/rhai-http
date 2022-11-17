@@ -1,22 +1,51 @@
 use rhai::def_package;
-use rhai::plugin::*;
-
+use rhai::{ImmutableString, plugin::*};
 #[derive(Debug, Clone)]
-pub struct TestStruct {
-    field: i64
+pub struct Http {
+    cookie: ImmutableString
 }
 
-impl TestStruct {
+#[derive(Debug, Clone)]
+pub struct HttpResponse {
+    code: i64,
+    body: ImmutableString,
+    cookie: ImmutableString,
+    headers: ImmutableString
+}
+
+impl Http {
     pub fn new() -> Self {
-        Self { field: 1 }
+        Self { cookie: "".into() }
     }
 
-    fn set_field(&mut self, new_val: i64){
-        self.field = new_val;
+    fn get_cookie(&mut self) -> ImmutableString {
+        self.cookie.clone()
     }
 
-    fn get_field(&mut self) -> i64 {
-        self.field.clone()
+    fn get(&mut self, url: ImmutableString) -> HttpResponse {
+        let response: reqwest::blocking::Response = reqwest::blocking::get(url.as_str()).unwrap();
+        let code:i64 = response.status().as_u16().into();
+        let body: ImmutableString = response.text().unwrap().into();
+
+        HttpResponse { code: code, body: body.clone(), cookie: "".into(), headers: "".into() }
+    }
+}
+
+impl HttpResponse {
+    fn code(&mut self) -> i64 {
+        self.code.clone()
+    }
+
+    fn body(&mut self) -> ImmutableString {
+        self.body.clone()
+    }
+
+    fn headers(&mut self) -> ImmutableString {
+        self.headers.clone()
+    }
+
+    fn cookie(&mut self) -> ImmutableString {
+        self.cookie.clone()
     }
 }
 
@@ -29,18 +58,40 @@ def_package! {
 
 #[export_module]
 mod http_functions{
-    #[rhai_fn(name = "new_struct")]
-    pub fn new_struct() -> TestStruct {
-        TestStruct::new()
+
+    // Http Struct
+    #[rhai_fn(name = "http")]
+    pub fn new_http() -> Http {
+        Http::new()
     }
 
-    #[rhai_fn(get = "field", pure)]
-    pub fn get_field(element: &mut TestStruct) -> i64 {
-        element.get_field()
+    #[rhai_fn(get = "cookie", pure)]
+    pub fn get_cookie(element: &mut Http) -> ImmutableString {
+        element.get_cookie()
     }
 
-    #[rhai_fn(set = "field")]
-    pub fn set_field(element: &mut TestStruct, value: i64){
-        element.set_field(value);
+    #[rhai_fn(name = "get")]
+    pub fn get(element: &mut Http, url: ImmutableString) -> HttpResponse {
+        element.get(url)
+    }
+
+    #[rhai_fn(get = "code", pure)]
+    pub fn get_code(element: &mut HttpResponse) -> rhai::INT {
+        element.code()
+    }
+
+    #[rhai_fn(get = "body", pure)]
+    pub fn get_body(element: &mut HttpResponse) -> ImmutableString {
+        element.body()
+    }
+
+    #[rhai_fn(get = "headers", pure)]
+    pub fn get_headers(element: &mut HttpResponse) -> ImmutableString {
+        element.headers()
+    }
+
+    #[rhai_fn(get = "cookie", pure)]
+    pub fn get_response_cookie(element: &mut HttpResponse) -> ImmutableString {
+        element.cookie()
     }
 }
