@@ -1,8 +1,10 @@
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use rhai::def_package;
 use rhai::{ImmutableString, plugin::*};
 #[derive(Debug, Clone)]
 pub struct Http {
-    cookie: ImmutableString
+    cookie: ImmutableString,
+    headers: reqwest::header::HeaderMap
 }
 
 #[derive(Debug, Clone)]
@@ -15,7 +17,7 @@ pub struct HttpResponse {
 
 impl Http {
     pub fn new() -> Self {
-        Self { cookie: "".into() }
+        Self { cookie: "".into(), headers: HeaderMap::new() }
     }
 
     fn get_cookie(&mut self) -> ImmutableString {
@@ -36,6 +38,13 @@ impl Http {
                 HttpResponse { code: 500, body: format!("{} can't be loaded", url.as_str()).into(), cookie: "".into(), headers: "".into() }
             }
         }        
+    }
+
+    fn set_header(&mut self, header_name : ImmutableString, header_value : ImmutableString) -> &mut Self{
+        let header_name_owned = header_name.into_owned();
+        let header_value_owned = header_value.into_owned();
+        self.headers.insert(HeaderName::try_from(header_name_owned).unwrap(), HeaderValue::try_from(header_value_owned).unwrap());
+        self
     }
 }
 
@@ -102,4 +111,6 @@ mod http_functions{
     pub fn get_response_cookie(element: &mut HttpResponse) -> ImmutableString {
         element.cookie()
     }
+
+
 }
