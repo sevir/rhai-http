@@ -40,11 +40,11 @@ impl Http {
         }        
     }
 
-    fn set_header(&mut self, header_name : ImmutableString, header_value : ImmutableString) -> &mut Self{
+    fn set_header(&mut self, header_name : ImmutableString, header_value : ImmutableString) -> bool{
         let header_name_owned = header_name.into_owned();
         let header_value_owned = header_value.into_owned();
         self.headers.insert(HeaderName::try_from(header_name_owned).unwrap(), HeaderValue::try_from(header_value_owned).unwrap());
-        self
+        true
     }
 }
 
@@ -90,6 +90,11 @@ mod http_functions{
     #[rhai_fn(name = "get")]
     pub fn get(element: &mut Http, url: ImmutableString) -> HttpResponse {
         element.get(url)
+    }
+
+    #[rhai_fn(name = "set_header")]
+    pub fn set_http_header(element: &mut Http, header_name: ImmutableString, header_value: ImmutableString) -> bool {
+        element.set_header(header_name, header_value)
     }
 
     #[rhai_fn(get = "code", pure)]
