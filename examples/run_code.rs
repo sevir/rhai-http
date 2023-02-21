@@ -1,4 +1,4 @@
-extern crate rhai-http;
+extern crate rhai_http;
 
 use rhai::{Engine, EvalAltResult};
 use rhai::packages::Package; 
