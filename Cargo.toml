@@ -1,9 +1,9 @@
 [package]
-name = "rhai_http"
+name = "rhai-http"
 version = "0.1.0"
 edition = "2021"
 authors = ["José F. Rives"]
-description = ""
+description = "Http functions for Rhai lang"
 keywords = ["scripting", "scripting-language", "embedded", "rhai"]
 
 [dependencies]
