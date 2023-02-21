@@ -1,27 +1,24 @@
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use rhai::def_package;
 use rhai::{ImmutableString, plugin::*};
+use serde_json;
+
+
 #[derive(Debug, Clone)]
 pub struct Http {
-    cookie: ImmutableString,
-    headers: reqwest::header::HeaderMap
+    headers: reqwest::header::HeaderMap,
+    body: String
 }
 
 #[derive(Debug, Clone)]
 pub struct HttpResponse {
     code: i64,
-    body: ImmutableString,
-    cookie: ImmutableString,
-    headers: ImmutableString
+    body: ImmutableString
 }
 
 impl Http {
     pub fn new() -> Self {
-        Self { cookie: "".into(), headers: HeaderMap::new() }
-    }
-
-    fn get_cookie(&mut self) -> ImmutableString {
-        self.cookie.clone()
+        Self { headers: HeaderMap::new(), body: String::new() }
     }
 
     fn get(&mut self, url: ImmutableString) -> HttpResponse {
@@ -32,10 +29,10 @@ impl Http {
                 let code:i64 = response.status().as_u16().into();
                 let body: ImmutableString = response.text().unwrap().into();
         
-                HttpResponse { code: code, body: body.clone(), cookie: "".into(), headers: "".into() }
+                HttpResponse { code: code, body: body.clone() }
             },
             Err(_e) => {
-                HttpResponse { code: 500, body: format!("{} can't be loaded", url.as_str()).into(), cookie: "".into(), headers: "".into() }
+                HttpResponse { code: 500, body: format!("{} can't be loaded", url.as_str()).into()}
             }
         }        
     }
@@ -46,6 +43,33 @@ impl Http {
         self.headers.insert(HeaderName::try_from(header_name_owned).unwrap(), HeaderValue::try_from(header_value_owned).unwrap());
         true
     }
+
+    fn set_body(&mut self, body: ImmutableString) -> bool{
+        self.body = body.into_owned().clone();
+        true
+    }
+
+    fn post(&mut self, url: ImmutableString) -> HttpResponse {
+        let client = reqwest::blocking::Client::new();
+        let headers = self.headers.clone();
+        
+        let response = client.post(url.as_str())
+            .headers(headers)
+            .body(self.body.clone())
+            .send();
+
+        match response{
+            Ok(response) => {
+                let code:i64 = response.status().as_u16().into();
+                let body: ImmutableString = response.text().unwrap().into();
+        
+                HttpResponse { code: code, body: body.clone()}
+            },
+            Err(_e) => {
+                HttpResponse { code: 500, body: format!("{} can't be loaded", url.as_str()).into()}
+            }
+        }
+    }
 }
 
 impl HttpResponse {
@@ -55,14 +79,6 @@ impl HttpResponse {
 
     fn body(&mut self) -> ImmutableString {
         self.body.clone()
-    }
-
-    fn headers(&mut self) -> ImmutableString {
-        self.headers.clone()
-    }
-
-    fn cookie(&mut self) -> ImmutableString {
-        self.cookie.clone()
     }
 }
 
@@ -82,19 +98,24 @@ mod http_functions{
         Http::new()
     }
 
-    #[rhai_fn(get = "cookie", pure)]
-    pub fn get_cookie(element: &mut Http) -> ImmutableString {
-        element.get_cookie()
-    }
-
     #[rhai_fn(name = "get")]
     pub fn get(element: &mut Http, url: ImmutableString) -> HttpResponse {
         element.get(url)
     }
 
+    #[rhai_fn(name = "post")]
+    pub fn post(element: &mut Http, url: ImmutableString) -> HttpResponse {
+        element.post(url)
+    }
+
     #[rhai_fn(name = "set_header")]
     pub fn set_http_header(element: &mut Http, header_name: ImmutableString, header_value: ImmutableString) -> bool {
         element.set_header(header_name, header_value)
+    }
+
+    #[rhai_fn(name = "set_body")]
+    pub fn set_http_body(element: &mut Http, body: ImmutableString) -> bool {
+        element.set_body(body)
     }
 
     #[rhai_fn(get = "code", pure)]
@@ -106,16 +127,17 @@ mod http_functions{
     pub fn get_body(element: &mut HttpResponse) -> ImmutableString {
         element.body()
     }
-
-    #[rhai_fn(get = "headers", pure)]
-    pub fn get_headers(element: &mut HttpResponse) -> ImmutableString {
-        element.headers()
+    
+    #[rhai_fn(name = "serialize")]
+    pub fn serialize(object: rhai::Dynamic) -> ImmutableString {
+        let result = serde_json::to_string(&object);
+        result.unwrap().as_str().into()
     }
 
-    #[rhai_fn(get = "cookie", pure)]
-    pub fn get_response_cookie(element: &mut HttpResponse) -> ImmutableString {
-        element.cookie()
+    #[rhai_fn(name = "parse")]
+    pub fn parse(json: ImmutableString) -> Dynamic {
+        let result: Dynamic = serde_json::from_str(&json.as_str()).unwrap();
+        result
     }
-
 
 }
